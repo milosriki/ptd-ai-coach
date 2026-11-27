@@ -50,7 +50,7 @@ export const INSTRUCTIONS = [
  *  the request's profile around it). */
 export function buildServer({ scopes = null, around = fn => fn() } = {}) {
   // `name` is the id clients key tools by (mcp__opengym__…); `title` is what a client shows.
-  const server = new McpServer({ name: 'opengym', title: 'openGym', version: VERSION, websiteUrl: 'https://opengym.ch' }, { instructions: INSTRUCTIONS })
+  const server = new McpServer({ name: 'opengym', title: 'PTD AI Coach', version: VERSION, websiteUrl: 'https://ptdcoach.ai' }, { instructions: INSTRUCTIONS })
   for (const t of ALL_TOOLS) {
     if (!toolAllowed(t.name, scopes)) continue
     const annotations = WRITES.has(t.name)

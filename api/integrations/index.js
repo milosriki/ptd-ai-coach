@@ -23,7 +23,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createStore } from './store.js';
 import { createOutbox, createBuckets } from './outbox.js';
-import { deriveKey, newId } from './crypto.js';
+import { deriveKey, newId, signature } from './crypto.js';
 import { detectEvents, eventData, envelope, testData, EVENTS } from './events.js';
 import { webhookProvider } from './providers/webhook.js';
 import { stravaProvider } from './providers/strava.js';
@@ -53,6 +53,29 @@ export function createIntegrations({ dataDir, secret, env = process.env, now = D
   });
   const providers = Object.fromEntries(ids.map(id => [id, all[id]]));
   const active = ids.length > 0;
+  // Optional server-wide webhook fan-out (GLOBAL_WEBHOOK_URL + GLOBAL_WEBHOOK_SECRET) so a
+  // companion service (e.g., my.ptdcoach.ai) receives signed workout/PR/weigh-in events without
+  // requiring every member to paste a webhook URL manually.
+  const globalHookUrl = String(env.GLOBAL_WEBHOOK_URL || '').trim();
+  const globalHookSecret = String(env.GLOBAL_WEBHOOK_SECRET || '').trim();
+  const globalHookOn = !!(globalHookUrl && globalHookSecret);
+  const sendGlobalEvent = (uid, ev, payload) => {
+    if (!globalHookOn) return;
+    const body = JSON.stringify({ ...payload, uid });
+    fetchFn(globalHookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': `PTD-AI-Coach-Webhook/${version}`,
+        'X-OpenGym-Event': ev.type,
+        'X-OpenGym-Delivery': payload.id,
+        'X-OpenGym-User': String(uid),
+        'X-OpenGym-Signature': signature(globalHookSecret, body),
+      },
+      body,
+      signal: AbortSignal.timeout?.(8000),
+    }).catch(() => {});
+  };
 
   // Nothing is created on disk for an instance that never turned this on.
   const dir = path.join(dataDir, 'integrations');
@@ -254,21 +277,27 @@ export function createIntegrations({ dataDir, secret, env = process.env, now = D
 
     /** After a stored PUT /api/data: queue what the profile's connections asked to hear about. */
     onStateWrite(uid, prev, next) {
-      if (!active || !store.has(uid)) return 0;
+      if (!active && !globalHookOn) return 0;
       // Settings → Modules: Integrations off pauses every connection (nothing is queued meanwhile,
       // nothing is disconnected). Switched back on, the next new event goes out as usual.
       if (next?.modules?.integrations === false) return 0;
-      const conns = store.list(uid).filter(r => providers[r.provider] && !r.paused);
-      if (!conns.length) return 0;
+      const conns = (active && store.has(uid)) ? store.list(uid).filter(r => providers[r.provider] && !r.paused) : [];
+      if (!conns.length && !globalHookOn) return 0;
       const evs = detectEvents(prev, next, { now: now() });
       let n = 0;
       for (const ev of evs) {
+        const data = eventData(ev, next);
+        if (globalHookOn) {
+          const geid = newId('evt');
+          sendGlobalEvent(uid, ev, envelope({ id: geid, type: ev.type, data, at: ev.at }));
+          n++;
+        }
         for (const c of conns) {
           if (!c.events.includes(ev.type) || ev.at < c.createdAt) continue;
           const eid = newId('evt');
           const r = outbox.enqueue({
             id: eid, key: `${c.provider}:${uid}:${c.id}:${ev.type}:${ev.entity}`, uid, conn: c.id, provider: c.provider, ev: ev.type,
-            payload: envelope({ id: eid, type: ev.type, data: eventData(ev, next), at: ev.at }),
+            payload: envelope({ id: eid, type: ev.type, data, at: ev.at }),
           });
           if (r === 'queued') n++;
           else if (r === 'full') settle(uid, c.id, ev.type, { ok: false, msg: 'Too much waiting to be sent, this one was skipped.' }, false);

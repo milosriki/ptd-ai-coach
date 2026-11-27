@@ -12,3 +12,5 @@ ptdcoach.ai {
 www.ptdcoach.ai {
 	redir https://ptdcoach.ai{uri} permanent
 }
+
+import /etc/caddy/extra/*.caddy

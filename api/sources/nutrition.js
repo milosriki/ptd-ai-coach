@@ -61,7 +61,7 @@ export function openNutritionSource({ url, tokenFor = () => null, fetchImpl = gl
       if (hit && hit.at > now() - cacheMs) return hit.v;
       try {
         const r = await fetchImpl(`${base}/api/v1/integration/summary?from=${f}&to=${t2}`, {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, signal: AbortSignal.timeout?.(5000)
+          headers: { Authorization: `Bearer ${token}`, 'X-Member-Id': String(memberId), Accept: 'application/json' }, signal: AbortSignal.timeout?.(5000)
         });
         if (!r.ok) throw new Error('status ' + r.status);
         const body = await r.json();
@@ -80,6 +80,10 @@ export function openNutritionSource({ url, tokenFor = () => null, fetchImpl = gl
 
 /** The source this server uses (NUTRITION_SOURCE). Without one, or an unknown one, nullSource. */
 export function nutritionSourceFrom(env = process.env, deps = {}) {
-  if (env.NUTRITION_SOURCE === 'opennutrition' && env.NUTRITION_URL) return openNutritionSource({ url: env.NUTRITION_URL, ...deps });
+  if (env.NUTRITION_SOURCE === 'opennutrition' && env.NUTRITION_URL) {
+    const svcToken = String(env.NUTRITION_SERVICE_TOKEN || '').trim();
+    const tokenFor = deps.tokenFor || (svcToken ? () => svcToken : () => null);
+    return openNutritionSource({ url: env.NUTRITION_URL, ...deps, tokenFor });
+  }
   return nullSource;
 }

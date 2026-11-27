@@ -61,3 +61,4 @@ frontend/ios/App/WatchCore/.build/
 caddy_data/
 caddy_config/
 coach-auth/
+caddy_extra/

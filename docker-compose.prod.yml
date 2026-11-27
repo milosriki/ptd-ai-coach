@@ -23,5 +23,14 @@ services:
       - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy_extra:/etc/caddy/extra:ro
       - ./caddy_data:/data
       - ./caddy_config:/config
+    networks:
+      - default
+      - ptd-net
+
+networks:
+  ptd-net:
+    name: ptd-net
+    driver: bridge
