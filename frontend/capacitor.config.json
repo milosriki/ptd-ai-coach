@@ -1,0 +1,21 @@
+{
+  "appId": "ai.ptdcoach.app",
+  "appName": "PTD AI Coach",
+  "webDir": "dist",
+  "backgroundColor": "#0b1220",
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 8000,
+      "launchAutoHide": true,
+      "launchFadeOutDuration": 180,
+      "backgroundColor": "#0b1220",
+      "showSpinner": false
+    }
+  }
+}

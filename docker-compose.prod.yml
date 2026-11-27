@@ -1,0 +1,27 @@
+# Production HTTPS stack for ptdcoach.ai (Zone A).
+# Caddy handles automatic Let's Encrypt TLS on :80/:443 and proxies cleanly to web:80
+# (which serves the static app + MIT exercise media and proxies /api -> api:3000 on one origin).
+#
+# Usage on VPS:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  web:
+    # Only expose internally on Docker network; Caddy owns public :80/:443 with TLS.
+    ports: !reset []
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_started
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy_data:/data
+      - ./caddy_config:/config

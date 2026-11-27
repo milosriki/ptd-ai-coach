@@ -1,0 +1,15 @@
+{
+  "name": "PTD AI Coach",
+  "short_name": "PTD AI",
+  "description": "PTD AI Coach — intelligent strength, conditioning & daily accountability coaching",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

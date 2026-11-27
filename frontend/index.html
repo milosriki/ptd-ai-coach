@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>
+  // Set direction before first paint so an RTL profile never flashes as LTR.
+  // The app re-applies this on every language change (lib/i18n.js setLang).
+  // i18n-core RTL_LANGS is the runtime source of truth — keep this list in sync.
+  try {
+    var s = JSON.parse(localStorage.getItem('gym_state_v1') || '{}');
+    var browserLang = (navigator.language || '').slice(0, 2).toLowerCase();
+    var l = s.lang || (browserLang === 'ar' || browserLang === 'fa' ? browserLang : 'en');
+    document.documentElement.lang = l;
+    document.documentElement.dir = l === 'ar' || l === 'fa' ? 'rtl' : 'ltr';
+  } catch (e) {}
+  // Boot watchdog: outside the module bundle in plain ES5 so a broken script or slow load
+  // shows a clear recovery screen instead of an infinite spinner.
+  (function () {
+    var shown = false, last = '';
+    function fail(title, detail) {
+      var b = document.getElementById('boot');
+      if (!b && document.readyState === 'loading') return document.addEventListener('DOMContentLoaded', function () { fail(title, detail); });
+      if (shown || !b || b.getAttribute('data-leaving')) return;
+      shown = true;
+      b.className = 'fail';
+      b.removeAttribute('aria-hidden');
+      b.setAttribute('role', 'alert');
+      b.setAttribute('dir', 'ltr');
+      b.innerHTML = '';
+      var box = document.createElement('div'), h = document.createElement('p'), p = document.createElement('p');
+      h.className = 'h';
+      h.textContent = title;
+      p.textContent = 'Reloading often helps. If it keeps happening, please share this with support@ptdcoach.ai:';
+      var c = document.createElement('code');
+      c.textContent = (detail || 'No error, it just never finished loading.') + ' (' + navigator.userAgent + ')';
+      var r = document.createElement('button');
+      r.type = 'button';
+      r.textContent = 'Reload';
+      r.onclick = function () { location.reload(); };
+      box.appendChild(h); box.appendChild(p); box.appendChild(c); box.appendChild(r);
+      b.appendChild(box);
+    }
+    window.addEventListener('error', function (e) {
+      var t = e && e.target;
+      if (t && t.tagName === 'SCRIPT') return fail('PTD AI Coach could not start on this browser.', 'Could not load ' + (t.src || 'a script'));
+      if (!e || !e.message) return;
+      last = e.message + (e.filename ? ' at ' + e.filename.split('/').pop() + ':' + e.lineno : '');
+      if (/SyntaxError|Unexpected|Invalid regular expression/i.test(e.message)) fail('PTD AI Coach could not start on this browser.', last);
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) {
+      var r = e && e.reason;
+      if (r) last = String((r && r.message) || r);
+    });
+    setTimeout(function () {
+      fail(last ? 'PTD AI Coach could not start on this browser.' : 'PTD AI Coach is taking too long to start.', last);
+    }, 10000);
+  })();
+</script>
+<title>PTD AI Coach</title>
+<meta name="description" content="PTD AI Coach — intelligent strength, conditioning & daily accountability coaching">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PTD AI Coach">
+<link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+</head>
+<body>
+<!-- Boot splash: Navy 1 · Pure Ice atmospheric glow matching the native splash. -->
+<style>
+  #boot{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;
+    background:radial-gradient(80% 42% at 50% 0%,rgba(29,66,216,.34),transparent 72%),radial-gradient(55% 32% at 85% 84%,rgba(124,196,255,.14),transparent 70%),#0b1220;
+    transition:opacity .22s ease-out}
+  #boot.out{opacity:0;pointer-events:none}
+  #boot svg{width:112px;height:auto;overflow:visible}
+  #boot rect,#boot ellipse{transform-box:fill-box;transform-origin:center}
+  #boot .bar{animation:boot-bar .32s cubic-bezier(.3,.7,.4,1) both}
+  #boot .pl{animation:boot-plate .28s cubic-bezier(.3,.7,.4,1.3) both}
+  #boot .pr{animation:boot-plate-r .28s cubic-bezier(.3,.7,.4,1.3) both}
+  #boot .in{animation-delay:.22s}
+  #boot .outer{animation-delay:.36s}
+  #boot .db{animation:boot-rep 1.25s ease-in-out .75s infinite}
+  #boot ellipse{fill:#7cc4ff;opacity:.18;animation:boot-shadow 1.25s ease-in-out .75s infinite}
+  @keyframes boot-bar{from{transform:scaleX(0)}}
+  @keyframes boot-plate{from{transform:translateX(-40px);opacity:0}}
+  @keyframes boot-plate-r{from{transform:translateX(40px);opacity:0}}
+  @keyframes boot-rep{50%{transform:translateY(-24px)}}
+  @keyframes boot-shadow{50%{transform:scaleX(.72);opacity:.06}}
+  #boot.fail{place-items:center;padding:24px}
+  #boot.fail div{max-width:340px;font:15px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#ffffff;text-align:center}
+  #boot.fail .h{font-size:19px;font-weight:700;margin:0 0 8px}
+  #boot.fail code{display:block;margin:14px 0 18px;padding:12px;border-radius:12px;background:#131f35;border:1px solid rgba(124,196,255,.18);color:#cbd5e1;font-size:12px;text-align:left;word-break:break-word;-webkit-user-select:text;user-select:text}
+  #boot.fail button{font:inherit;font-weight:600;color:#ffffff;background:linear-gradient(180deg,#3363ff 0%,#1d42d8 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 10px 24px rgba(29,66,216,.42);border:0;border-radius:12px;min-height:44px;padding:0 28px}
+  @media (prefers-reduced-motion:reduce){
+    #boot .bar,#boot .pl,#boot .pr,#boot ellipse{animation:none}
+    #boot .db{animation:boot-breathe 1.6s ease-in-out infinite}
+    @keyframes boot-breathe{50%{opacity:.55}}
+  }
+</style>
+<div id="boot" aria-hidden="true">
+  <svg viewBox="80 140 352 250">
+    <ellipse cx="256" cy="372" rx="150" ry="9"/>
+    <g class="db">
+      <rect class="bar" x="80" y="242" width="352" height="28" rx="12" fill="#ffffff"/>
+      <rect class="pl in" x="131" y="169" width="47" height="174" rx="14" fill="#ffffff"/>
+      <rect class="pr in" x="334" y="169" width="47" height="174" rx="14" fill="#7cc4ff"/>
+      <rect class="pl outer" x="80" y="199" width="36" height="114" rx="12" fill="#ffffff"/>
+      <rect class="pr outer" x="396" y="199" width="36" height="114" rx="12" fill="#7cc4ff"/>
+    </g>
+  </svg>
+</div>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

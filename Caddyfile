@@ -1,0 +1,14 @@
+{
+	email support@ptdcoach.ai
+}
+
+ptdcoach.ai {
+	encode zstd gzip
+	reverse_proxy web:80 {
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+www.ptdcoach.ai {
+	redir https://ptdcoach.ai{uri} permanent
+}
