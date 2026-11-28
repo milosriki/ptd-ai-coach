@@ -344,6 +344,8 @@ function finish(job, result) {
 // importing the web-push plumbing (and dragging it into every test that touches the queue).
 let onProposal = null;
 export function setProposalHook(fn) { onProposal = fn; }
+let onNutrition = null;
+export function setNutritionHook(fn) { onNutrition = fn; }
 
 /* ---------- execution ---------- */
 
@@ -374,6 +376,7 @@ async function execute(job) {
   // Web research: a chat question, with the owner allowing it, a provider that has a search tool,
   // and the person having switched it on for themselves.
   const useWeb = job.kind === 'ask' && !!cfg.web && !!cfgStore.providerMeta(cfg).web && S.coach?.web === true;
+  const nutrition = onNutrition ? await Promise.resolve(onNutrition(job.uid)).catch(() => null) : null;
   const payload = payloadLib.build(S, {
     handle: handleFor(job.uid),
     kind: job.kind,
@@ -386,6 +389,7 @@ async function execute(job) {
     focus: job.focus,
     vitals: job.vitals,
     routines: job.routines,
+    nutrition,
     web: useWeb,
     // The app says which language it is in. A scheduled review has no app behind it: a profile
     // that never picked a language then gets the instance's DEFAULT_LANG, like its screens do.

@@ -802,6 +802,29 @@ export function build(S, opts = {}) {
       p.userNote = String(opts.refine).slice(0, MAX_NOTE_CHARS);
     }
   }
+  if (opts.nutrition && typeof opts.nutrition === 'object' && Array.isArray(opts.nutrition.days) && opts.nutrition.days.length) {
+    const cleanDays = opts.nutrition.days.slice(-14).map(d => ({
+      date: day(d?.date),
+      kcal: num(d?.kcal),
+      protein: num(d?.protein),
+      carbs: num(d?.carbs),
+      fat: num(d?.fat),
+      targetKcal: num(d?.target?.kcal),
+      targetProtein: num(d?.target?.protein)
+    })).filter(d => d.date);
+    if (cleanDays.length) {
+      p.nutrition = {
+        days: cleanDays,
+        ...(opts.nutrition.checkin && typeof opts.nutrition.checkin === 'object' ? {
+          checkin: {
+            trend: num(opts.nutrition.checkin.trend),
+            expenditure: num(opts.nutrition.checkin.expenditure),
+            note: text(opts.nutrition.checkin.note, 200)
+          }
+        } : {})
+      };
+    }
+  }
   if (opts.kind !== 'debrief' && opts.kind !== 'adapt') {
     const said = conversation(coach, [opts.note, opts.refine]);
     if (said.length) p.conversation = said;
